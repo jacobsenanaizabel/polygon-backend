@@ -67,9 +67,23 @@ export class TaskRunner {
                 currentWorkflow.status = WorkflowStatus.Failed;
             } else if (allCompleted) {
                 currentWorkflow.status = WorkflowStatus.Completed;
-                currentWorkflow.finalResult = task.output ?? null;
             } else {
                 currentWorkflow.status = WorkflowStatus.InProgress;
+            }
+
+            if (allCompleted || anyFailed) {
+                const sortedTasks = currentWorkflow.tasks.sort((a, b) => a.stepNumber - b.stepNumber);
+                currentWorkflow.finalResult = JSON.stringify({
+                    workflowId: currentWorkflow.workflowId,
+                    tasks: sortedTasks.map(t => ({
+                        taskId: t.taskId,
+                        taskType: t.taskType,
+                        stepNumber: t.stepNumber,
+                        status: t.status,
+                        output: t.output ? JSON.parse(t.output) : null,
+                        error: t.error ?? null,
+                    })),
+                });
             }
 
             await workflowRepository.save(currentWorkflow);
