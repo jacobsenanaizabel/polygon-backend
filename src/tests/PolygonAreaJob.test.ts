@@ -1,4 +1,4 @@
-import { PolygonAreaJob } from './PolygonAreaJob';
+import { PolygonAreaJob } from '../jobs/PolygonAreaJob';
 import { Task } from '../models/Task';
 
 const VALID_GEOJSON = JSON.stringify({

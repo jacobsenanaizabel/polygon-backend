@@ -10,24 +10,16 @@ type PolygonAreaFinal = {
 
 export class PolygonAreaJob implements Job {
     async run(task: Task): Promise<PolygonAreaFinal> {
+		console.log(`Implement Area calculation for ${task.taskId}...`);
+		const geometry: Feature<Polygon | MultiPolygon> = JSON.parse(task.geoJson);
 
-        let geometry : Feature<Polygon | MultiPolygon>;
-        let squareMeters: number;
-        try{
+		if (!geometry?.type) {
+			//dont need catch because of taskRunner catch
+			throw new Error('Invalid GeoJSON: missing type field');
+		}
 
-            geometry = JSON.parse(task.geoJson);
-            if (!geometry?.type) {
-                throw new Error('Invalid geometric, missing type field');
-            }
-
-        squareMeters = area(geometry);
-
-
-        } catch(error: any) {
-            throw new Error(`Error running area calculation: ${error.message}`)
-        }
-
-         console.log(`Sending email notification for task ${task.taskId}...`);
-          return { area: squareMeters, unit: 'm^2' };
+		const squareMeters = area(geometry);
+		console.log(`Final value area: ${squareMeters} m^2`);
+		return { area: squareMeters, unit: 'm^2' };
     }
 }
