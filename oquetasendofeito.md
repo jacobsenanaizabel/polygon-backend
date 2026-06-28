@@ -1,0 +1,1 @@
+configuração do jest e implementação do novo job 
