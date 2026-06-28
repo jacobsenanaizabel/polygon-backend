@@ -1,16 +1,11 @@
 import { Repository } from 'typeorm';
-import { Task } from '../models/Task';
+import { Task, TaskStatus } from '../models/Task';
 import { getJobForTaskType } from '../jobs/JobFactory';
 import {WorkflowStatus} from "../workflows/WorkflowFactory";
 import {Workflow} from "../models/Workflow";
 import {Result} from "../models/Result";
 
-export enum TaskStatus {
-    Queued = 'queued',
-    InProgress = 'in_progress',
-    Completed = 'completed',
-    Failed = 'failed'
-}
+export { TaskStatus };
 
 export class TaskRunner {
     constructor(
@@ -37,7 +32,7 @@ export class TaskRunner {
             result.taskId = task.taskId!;
             result.data = JSON.stringify(taskResult || {});
             await resultRepository.save(result);
-            task.resultId = result.resultId!;
+            task.output = result.data;
             task.status = TaskStatus.Completed;
             task.progress = null;
             await this.taskRepository.save(task);
@@ -46,6 +41,7 @@ export class TaskRunner {
             console.error(`Error running job ${task.taskType} for task ${task.taskId}:`, error);
 
             task.status = TaskStatus.Failed;
+            task.error = error?.message ?? 'Unknown error';
             task.progress = null;
             await this.taskRepository.save(task);
 
@@ -63,6 +59,7 @@ export class TaskRunner {
                 currentWorkflow.status = WorkflowStatus.Failed;
             } else if (allCompleted) {
                 currentWorkflow.status = WorkflowStatus.Completed;
+                currentWorkflow.finalResult = task.output ?? null;
             } else {
                 currentWorkflow.status = WorkflowStatus.InProgress;
             }
