@@ -18,6 +18,14 @@ export class TaskRunner {
      * @throws If the job fails, it rethrows the error.
      */
     async run(task: Task): Promise<void> {
+        if (task.dependsOn != null) {
+            const dependency = await this.taskRepository.findOne({
+                where: { workflow: { workflowId: task.workflow.workflowId }, stepNumber: task.dependsOn },
+                relations: ['workflow'],
+            });
+            task.input = dependency?.output ?? null;
+        }
+
         task.status = TaskStatus.InProgress;
         task.progress = 'starting job...';
         await this.taskRepository.save(task);

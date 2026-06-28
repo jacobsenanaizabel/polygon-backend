@@ -26,6 +26,9 @@ export class Task {
     progress?: string | null;
 
     @Column({ nullable: true, type: 'text' })
+    input?: string | null;
+
+    @Column({ nullable: true, type: 'text' })
     output?: string | null;
 
     @Column({ nullable: true, type: 'text' })
