@@ -1,6 +1,23 @@
 # Polygon Backend
 
-A Node.js/TypeScript backend that processes geospatial workflows asynchronously. Workflows are defined in YAML, tasks run sequentially with dependency support, and results are aggregated when all steps complete.
+A project about process geospatial workflow asynchronously.
+
+## Running Locally
+
+```bash
+npm install
+npm start
+```
+
+The server starts at `http://localhost:3000` 
+The background worker begins polling for queued tasks immediately.
+
+### Run tests
+
+```bash
+npm test
+```
+---
 
 ## Architecture Overview
 
@@ -9,31 +26,20 @@ POST /analysis
       │
       ▼
 WorkflowFactory ──── reads example_workflow.yml
-      │               creates Workflow + Tasks (queued)
+      │               creates Workflow + Tasks
       ▼
-taskWorker (polls every 5s)
+taskWorker
       │
-      ├── checks task dependencies (dependsOn)
+      ├── checks task dependencies 
       ▼
 TaskRunner
       │
       ├── sets task → in_progress
-      ├── runs Job (PolygonAreaJob, DataAnalysisJob, etc.)
+      ├── runs Job (PolygonAreaJob, DataAnalysisJob, ...)
       ├── saves task.output → completed / failed
       └── recalculateWorkflowStatus()
               └── sets workflow.finalResult when all tasks done
 ```
-
-## Workflow Steps
-
-The default workflow (`src/workflows/example_workflow.yml`) runs 4 sequential steps:
-
-| Step | taskType            | Depends On | Description                                      |
-|------|---------------------|------------|--------------------------------------------------|
-| 1    | `polygonArea`       | —          | Calculates polygon area in m² from GeoJSON       |
-| 2    | `analysis`          | step 1     | Detects which country the polygon is located in  |
-| 3    | `notification`      | step 2     | Sends an email notification (simulated, 500ms)   |
-| 4    | `reportGeneration`  | step 3     | Aggregates outputs from all preceding steps      |
 
 ## Project Structure
 
@@ -49,7 +55,7 @@ src/
 │   ├── EmailNotificationJob.ts  # Simulated email notification
 │   └── ReportGenerationJob.ts  # Aggregates preceding task outputs
 ├── models/
-│   ├── Task.ts                  # Task entity (status, input, output, dependsOn…)
+│   ├── Task.ts                  # Task entity (status, input, output, dependsOn — holds stepNumber of the dependency task)
 │   └── Workflow.ts              # Workflow entity (status, finalResult)
 ├── routes/
 │   ├── analysisRoutes.ts        # POST /analysis
@@ -67,23 +73,7 @@ src/
 └── index.ts                     # Express server entry point
 ```
 
-## Task & Workflow States
-
-**Task status lifecycle:**
-```
-queued → in_progress → completed
-                    └→ failed
-```
-
-**Workflow status lifecycle:**
-```
-initial → in_progress → completed
-                     └→ failed
-```
-
-A workflow reaches `completed` only when all tasks complete. If any task fails, the workflow becomes `failed` and downstream tasks remain queued (never picked up).
-
-## API Endpoints
+## Collection
 
 ### `POST /analysis`
 
@@ -162,42 +152,6 @@ Returns `404` if workflow not found, `400` if not yet completed.
 
 ---
 
-## Running Locally
-
-### Prerequisites
-
-- Node.js 18+
-- npm
-
-### Installation
-
-```bash
-npm install
-```
-
-### Start the server
-
-```bash
-npm start
-```
-
-The server starts at `http://localhost:3000`. The background worker begins polling for queued tasks immediately.
-
-> **Note:** The database uses `dropSchema: true`, so all data is wiped on every server restart. Re-create workflows after restarting.
-
-### Development (auto-reload)
-
-```bash
-npm run dev
-```
-
-### Run tests
-
-```bash
-npm test
-```
-
----
 
 ## Example: Full Workflow Run
 
@@ -229,13 +183,4 @@ curl http://localhost:3000/workflow/<workflowId>/status
 curl http://localhost:3000/workflow/<workflowId>/results
 ```
 
-Each task runs sequentially with a 5-second polling interval between steps, so the full workflow takes ~20–25 seconds to complete.
-
-## Tech Stack
-
-- **Runtime:** Node.js + TypeScript
-- **Framework:** Express.js
-- **ORM:** TypeORM with SQLite
-- **Geospatial:** @turf/area, @turf/boolean-within
-- **Workflow definition:** YAML (js-yaml)
-- **Testing:** Jest + ts-jest
+Obs: each task runs sequentially with a 5-second polling interval between steps.

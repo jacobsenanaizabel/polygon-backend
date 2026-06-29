@@ -27,10 +27,13 @@ export async function taskWorker() {
                 },
                 relations: ['workflow'],
             });
-            if (depCompleted) {
-                task = candidate;
-                break;
-            }
+            if (depCompleted?.status === TaskStatus.Failed) {
+				candidate.status = TaskStatus.Failed;
+			}
+			if (depCompleted?.status === TaskStatus.Completed) {
+				task = candidate;
+				break;
+			}
         }
 
         if (task) {
